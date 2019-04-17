@@ -14,6 +14,7 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/crop_box.h>
 
+#include <pcl/visualization/pcl_visualizer.h>
 
 using namespace cv;
 using namespace std;
@@ -26,10 +27,10 @@ public:
     typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
     typedef pcl::PointCloud<pcl::Normal> SurfaceNormals;
     filters() :
-            pass_deep_       (1120.0f),
+            pass_deep_       (1000.0f),
             outlier_meak_    (20),
             outlier_stdm_    (2.8f),
-            leaf_size_       (3.0f)
+            leaf_size_       (2.0f)
     {}
     ~filters()  {}
 
@@ -40,9 +41,11 @@ public:
         pcl::PassThrough<pcl::PointXYZ> cloud_filter; // Create the filtering object
         cloud_filter.setInputCloud(tem_cloud);           // Input generated cloud to filter
         cloud_filter.setFilterFieldName("z");        // Set field name to Z-coordinate
-        cloud_filter.setFilterLimits(0.0, pass_deep_);      // Set accepted interval values
+        cloud_filter.setFilterLimits(1.0, pass_deep_);      // Set accepted interval values
         cloud_filter.filter(*cloud);
         std::cout << "After PassThrough filter, point cloud have " << cloud->points.size()
+                  << " datas." << std::endl;
+        std::cout << "After PassThrough filter, tem_cloud cloud have " << tem_cloud->points.size()
                   << " datas." << std::endl;
     }
     // Statistical Outlier
@@ -79,8 +82,8 @@ private:
 
 int main()
 {
-    std::string str_loadpath = "/home/cobot/桌面/12345/ImageFromCamera/point_cloud_extrinsic_pose_04_16_16_43_13_074.yaml";
-    std::string str_savepath = "/home/cobot/桌面/point_cloud_extrinsic_pose_04_16_16_43_13_074.ply";
+    std::string str_loadpath = "/home/cobot/桌面/12345/ImageFromCamera/point_cloud_extrinsic_pose_04_16_16_57_41_525.yaml";
+    std::string str_savepath = "/home/cobot/桌面/point_cloud_extrinsic_pose_04_16_16_57_41_525.ply";
 
     FileStorage fs(str_loadpath,FileStorage::READ);
     if (!fs.isOpened())
@@ -103,13 +106,20 @@ int main()
                 pttmp.x = Matrix1.at<cv::Vec3f>(i,j)[0];
                 pttmp.y = Matrix1.at<cv::Vec3f>(i,j)[1];
                 pttmp.z = Matrix1.at<cv::Vec3f>(i,j)[2];
-
+                if ( pttmp.x != 0 &&  pttmp.y != 0 &&  pttmp.z != 0 ) {
                 incloud->points.push_back(pttmp);
+                }
             }
         }
         incloud->width = incloud->points.size();
         incloud->height =1;
         incloud->is_dense = true;
+
+        pcl::visualization::PCLVisualizer viewer ;
+//
+//        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> color (incloud, 0, 50, 50 ) ;
+//        viewer.addPointCloud( incloud , color, "cloud") ;
+
 
         filters ft ;
         ft.pass_through_filter(incloud);
@@ -118,6 +128,16 @@ int main()
 
 //        pcl::io::savePCDFile(str_savepath,*incloud);
         pcl::io::savePLYFile(str_savepath,*incloud);
+
+        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> color1 ( incloud, 255, 255, 255 ) ;
+        viewer.addPointCloud( incloud , color1, "cloud1") ;
+
+        while  (! viewer.wasStopped() ) {
+            viewer.spin() ;
+        }
+
+
+
 
 //    cv::imshow("aaa",Matrix1);
 //    cv::waitKey(0);
